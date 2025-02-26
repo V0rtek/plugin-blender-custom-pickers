@@ -10,18 +10,23 @@ import bpy
 
 current_object = None
 index = 0
-asset_location = [0.0, 0.0, 0.0]  # Default location
+asset_location = [0.0, 0.0, 0.0] 
 
-# Property for the collection name selection
-def update_collection(self, context):
-    global index
-    index = 0  # Reset index when switching collections
+# Add a StringProperty to store the collection name
+def get_collection_name(self):
+    return self.collection_name
+
+def set_collection_name(self, value):
+    self.collection_name = value
 
 # Créer les collections de bases et met 2 objets interchangables pour l'exemple
 def create_base_workspace():
     collection = get_or_create_collection()
     data_collection = get_or_create_data_collection()
-    
+
+    if len(data_collection.objects) > 0:
+        return
+
     bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, -5))
     actual_obj = bpy.context.object  # Récupérer l'objet actif (celui qui vient d'être créé)
     data_collection.objects.link(actual_obj)
@@ -32,18 +37,18 @@ def create_base_workspace():
     data_collection.objects.link(actual_obj)
     bpy.context.scene.collection.objects.unlink(actual_obj) 
 
-# Get or create the collection "justin_plugin"
+# Get or create the collection based on the user-defined name
 def get_or_create_collection():
-    collection_name = "justin_plugin"
+    collection_name = bpy.context.scene.collection_name  # Use user-defined name
     collection = bpy.data.collections.get(collection_name)
     if not collection:
         collection = bpy.data.collections.new(collection_name)
         bpy.context.scene.collection.children.link(collection)
     return collection
 
-# Get or create the collection based on user selection
+# Get or create the data collection based on the user-defined name
 def get_or_create_data_collection():
-    collection_name = bpy.context.scene.selected_collection
+    collection_name = "data_" + bpy.context.scene.collection_name  # Prefix with 'data_'
     collection = bpy.data.collections.get(collection_name)
     if not collection:
         collection = bpy.data.collections.new(collection_name)
@@ -55,6 +60,7 @@ def remove_previous_object():
     for obj in list(get_or_create_collection().objects):
         bpy.data.objects.remove(obj, do_unlink=True)
 
+
 def get_next_asset():
     global index
     collection = get_or_create_data_collection()
@@ -65,6 +71,7 @@ def get_next_asset():
 
     obj = collection.objects[index]
     return obj
+
 
 def get_previous_asset():
     global index
@@ -87,7 +94,7 @@ def add_asset(obj):
     obj_copy.location = tuple(asset_location)
     collection.objects.link(obj_copy)   # add to collection
 
-# Operator to create the workspace
+# // ------------------------------------- OPERATORS ------------------------------------- \\ #
 class OBJECT_OT_create_workspace(bpy.types.Operator):
     bl_idname = "object.create_workspace"
     bl_label = "Create Workspace"
@@ -98,7 +105,6 @@ class OBJECT_OT_create_workspace(bpy.types.Operator):
         create_base_workspace()
         return {'FINISHED'}
 
-# Operator to set the location to the cursor's position
 class OBJECT_OT_set_location_cursor(bpy.types.Operator):
     bl_idname = "object.set_location_cursor"
     bl_label = "Set Location to Cursor"
@@ -111,7 +117,7 @@ class OBJECT_OT_set_location_cursor(bpy.types.Operator):
         self.report({'INFO'}, f"Location set to: {asset_location}")
         return {'FINISHED'}
 
-# Operator to handle left arrow click
+
 class OBJECT_OT_prev(bpy.types.Operator):
     bl_idname = "object.prev"
     bl_label = "Previous Object"
@@ -122,7 +128,6 @@ class OBJECT_OT_prev(bpy.types.Operator):
         add_asset(get_previous_asset())
         return {'FINISHED'}
 
-# Operator to handle right arrow click
 class OBJECT_OT_next(bpy.types.Operator):
     bl_idname = "object.next"
     bl_label = "Next Object"
@@ -147,19 +152,18 @@ class VIEW3D_PT_object_toggle_panel(bpy.types.Panel):
         # Instructions section
         layout.label(text="Instructions:")
         layout.label(text="1. Create the workspace to set up collections.")
-        layout.label(text="2. Use the arrows to switch between assets in 'data_justin_plugin'.")
+        layout.label(text="2. Use the arrows to switch between assets in 'data_[name of your collection]'.")
         layout.label(text="3. Click 'Set to Cursor' to place the asset at the 3D cursor location.")
-        layout.label(text="4. Add your assets to 'data_justin_plugin' for them to be interchangeable.")
+        layout.label(text="4. Add your assets to 'data_[name of your collection]' for them to be interchangeable.")
         layout.label(text="5. Modify 'asset_location' if you want a custom default location.")
 
+        # Input for collection name
+        layout.prop(context.scene, "collection_name", text="Name")
+
         col = layout.column()
-        col.prop(context.scene, "cursor_location", text="Create the basics")
         col.operator(OBJECT_OT_create_workspace.bl_idname, text="Create Workspace")
 
-        layout.label(text="Switch between assets in selected collection")
-        # Dropdown for collection selection
-        layout.prop(context.scene, "selected_collection", text="Select Collection")
-
+        layout.label(text="Switch between assets in data_[name of your collection] collection")
         # Arrow buttons
         row = layout.row()
         row.operator(OBJECT_OT_prev.bl_idname, text="←")
@@ -171,30 +175,27 @@ class VIEW3D_PT_object_toggle_panel(bpy.types.Panel):
         col2.prop(context.scene, "cursor_location", text="Location Coordinates")
         col2.operator(OBJECT_OT_set_location_cursor.bl_idname, text="Set to Cursor")
 
-# Register and unregister functions
+# // ------------------------- Register and unregister functions --------------------------- \\ #
 def register():
-    bpy.types.Scene.selected_collection = bpy.props.EnumProperty(
-        name="Data Collection",
-        description="Choose the data collection",
-        items=[(col.name, col.name, "") for col in bpy.data.collections],
-        default="data_justin_plugin",
-        update=update_collection
+    bpy.types.Scene.collection_name = bpy.props.StringProperty(
+        name="Collection Name",
+        default="justin_plugin",  # Default name
     )
-    
+
     bpy.utils.register_class(OBJECT_OT_create_workspace)
     bpy.utils.register_class(OBJECT_OT_prev)
     bpy.utils.register_class(OBJECT_OT_next)
     bpy.utils.register_class(OBJECT_OT_set_location_cursor)
     bpy.utils.register_class(VIEW3D_PT_object_toggle_panel)
 
+
 def unregister():
-    del bpy.types.Scene.selected_collection
-    
     bpy.utils.unregister_class(OBJECT_OT_create_workspace)
     bpy.utils.unregister_class(OBJECT_OT_prev)
     bpy.utils.unregister_class(OBJECT_OT_next)
     bpy.utils.unregister_class(OBJECT_OT_set_location_cursor)
     bpy.utils.unregister_class(VIEW3D_PT_object_toggle_panel)
+    del bpy.types.Scene.collection_name
 
 if __name__ == "__main__":
     register()
