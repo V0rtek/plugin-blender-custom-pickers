@@ -19,24 +19,6 @@ def get_collection_name(self):
 def set_collection_name(self, value):
     self.collection_name = value
 
-# Créer les collections de bases et met 2 objets interchangables pour l'exemple
-def create_base_workspace():
-    collection = get_or_create_collection()
-    data_collection = get_or_create_data_collection()
-
-    if len(data_collection.objects) > 0:
-        return
-
-    bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, -5))
-    actual_obj = bpy.context.object  # Récupérer l'objet actif (celui qui vient d'être créé)
-    data_collection.objects.link(actual_obj)
-    bpy.context.scene.collection.objects.unlink(actual_obj)  # Retirer de Scene Collection
-
-    bpy.ops.mesh.primitive_cube_add(size=1, enter_editmode=False, align='WORLD', location=(0, 2, -5))
-    actual_obj = bpy.context.object 
-    data_collection.objects.link(actual_obj)
-    bpy.context.scene.collection.objects.unlink(actual_obj) 
-
 def get_or_create_collection():
     collection_name = "temp_" + bpy.context.scene.collection_name 
     collection = bpy.data.collections.get(collection_name)
@@ -95,10 +77,13 @@ def add_asset(obj):
 def get_collection_items(self, context):
     return [(col.name, col.name, "") for col in bpy.data.collections]
 
+# Collection is picked:
 def update_collection(self, context):
+    global index
     collection = bpy.data.collections.get(self.collection_picker)
     if collection:
         bpy.context.scene.collection_name = collection.name
+        index = 0
 
 # // ------------------------------------- OPERATORS ------------------------------------- \\ #
 class COLLECTION_PICKER_PT_Panel(bpy.types.Panel):
@@ -114,16 +99,6 @@ class COLLECTION_PICKER_PT_Panel(bpy.types.Panel):
 
         # Dropdown
         layout.prop(scene, "collection_picker", text="Select Collection")
-
-class OBJECT_OT_create_workspace(bpy.types.Operator):
-    bl_idname = "object.create_workspace"
-    bl_label = "Create Workspace"
-    bl_description = "Create the base workspace"
-    bl_options = {'REGISTER', 'UNDO'}
-
-    def execute(self, context):
-        create_base_workspace()
-        return {'FINISHED'}
 
 class OBJECT_OT_set_location_cursor(bpy.types.Operator):
     bl_idname = "object.set_location_cursor"
@@ -176,13 +151,8 @@ class VIEW3D_PT_object_toggle_panel(bpy.types.Panel):
         layout.label(text="2. Pick it with the dropdown below.")
         layout.label(text="3. Use the arrows to switch between assets.")
 
-        # TODO add base collection picker
         layout.prop(scene, "collection_picker", text="Data Collection")
 
-        col = layout.column()
-        col.operator(OBJECT_OT_create_workspace.bl_idname, text="Create Workspace")
-
-        layout.label(text="Switch between assets in the data collection")
         # Arrow buttons
         row = layout.row()
         row.operator(OBJECT_OT_prev.bl_idname, text="←")
@@ -200,7 +170,6 @@ def register():
         default="justin_plugin",  # Default name
     )
 
-    bpy.utils.register_class(OBJECT_OT_create_workspace)
     bpy.utils.register_class(OBJECT_OT_prev)
     bpy.utils.register_class(OBJECT_OT_next)
     bpy.utils.register_class(OBJECT_OT_set_location_cursor)
@@ -217,7 +186,6 @@ def register():
 
 
 def unregister():
-    bpy.utils.unregister_class(OBJECT_OT_create_workspace)
     bpy.utils.unregister_class(OBJECT_OT_prev)
     bpy.utils.unregister_class(OBJECT_OT_next)
     bpy.utils.unregister_class(OBJECT_OT_set_location_cursor)
