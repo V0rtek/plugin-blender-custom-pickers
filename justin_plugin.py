@@ -37,18 +37,16 @@ def create_base_workspace():
     data_collection.objects.link(actual_obj)
     bpy.context.scene.collection.objects.unlink(actual_obj) 
 
-# Get or create the collection based on the user-defined name
 def get_or_create_collection():
-    collection_name = bpy.context.scene.collection_name  # Use user-defined name
+    collection_name = "temp_" + bpy.context.scene.collection_name 
     collection = bpy.data.collections.get(collection_name)
     if not collection:
         collection = bpy.data.collections.new(collection_name)
         bpy.context.scene.collection.children.link(collection)
     return collection
 
-# Get or create the data collection based on the user-defined name
 def get_or_create_data_collection():
-    collection_name = "data_" + bpy.context.scene.collection_name  # Prefix with 'data_'
+    collection_name = bpy.context.scene.collection_name  
     collection = bpy.data.collections.get(collection_name)
     if not collection:
         collection = bpy.data.collections.new(collection_name)
@@ -100,8 +98,7 @@ def get_collection_items(self, context):
 def update_collection(self, context):
     collection = bpy.data.collections.get(self.collection_picker)
     if collection:
-        # Do shits
-        print(f"Selected collection: {collection.name}")
+        bpy.context.scene.collection_name = collection.name
 
 # // ------------------------------------- OPERATORS ------------------------------------- \\ #
 class COLLECTION_PICKER_PT_Panel(bpy.types.Panel):
@@ -176,13 +173,7 @@ class VIEW3D_PT_object_toggle_panel(bpy.types.Panel):
         # Instructions section
         layout.label(text="Instructions:")
         layout.label(text="1. Create the workspace to set up collections.")
-        layout.label(text="2. Use the arrows to switch between assets in 'data_[name of your collection]'.")
-        layout.label(text="3. Click 'Set to Cursor' to place the asset at the 3D cursor location.")
-        layout.label(text="4. Add your assets to 'data_[name of your collection]' for them to be interchangeable.")
-        layout.label(text="5. Modify 'asset_location' if you want a custom default location.")
-
-        # Input for collection name
-        layout.prop(context.scene, "collection_name", text="Name")
+        layout.label(text="2. ...")
 
         # TODO add base collection picker
         layout.prop(scene, "collection_picker", text="Data Collection")
