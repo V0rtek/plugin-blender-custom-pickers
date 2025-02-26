@@ -172,8 +172,9 @@ class VIEW3D_PT_object_toggle_panel(bpy.types.Panel):
 
         # Instructions section
         layout.label(text="Instructions:")
-        layout.label(text="1. Create the workspace to set up collections.")
-        layout.label(text="2. ...")
+        layout.label(text="1. Create a collection with all the switchable assets.")
+        layout.label(text="2. Pick it with the dropdown below.")
+        layout.label(text="3. Use the arrows to switch between assets.")
 
         # TODO add base collection picker
         layout.prop(scene, "collection_picker", text="Data Collection")
@@ -181,17 +182,16 @@ class VIEW3D_PT_object_toggle_panel(bpy.types.Panel):
         col = layout.column()
         col.operator(OBJECT_OT_create_workspace.bl_idname, text="Create Workspace")
 
-        layout.label(text="Switch between assets in data_[name of your collection] collection")
+        layout.label(text="Switch between assets in the data collection")
         # Arrow buttons
         row = layout.row()
         row.operator(OBJECT_OT_prev.bl_idname, text="←")
         row.operator(OBJECT_OT_next.bl_idname, text="→")
 
         # Location selection options
-        layout.label(text="Set Asset Location")
         col2 = layout.column()
         col2.prop(context.scene, "cursor_location", text="Location Coordinates")
-        col2.operator(OBJECT_OT_set_location_cursor.bl_idname, text="Set to Cursor")
+        col2.operator(OBJECT_OT_set_location_cursor.bl_idname, text="Set Location to Cursor")
 
 # // ------------------------- Register and unregister functions --------------------------- \\ #
 def register():
