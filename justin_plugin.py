@@ -1,9 +1,9 @@
 bl_info = {
-    "name": "Object Toggle with Arrows and Location Selection",
+    "name": "Blender Modular Asset Creator",
     "blender": (2, 80, 0),
     "category": "Object",
     "author": "Justin Morand",
-    "description": "Alternates between a cube and a sphere with arrow buttons and custom location options."
+    "description": "Alternates between given modular options."
 }
 
 import bpy
@@ -11,6 +11,23 @@ import bpy
 current_object = None
 index = 0
 asset_location = [0.0, 0.0, 0.0]  # Default location
+
+# Créer les collections de bases et met 2 objets interchangables pour l'exemple
+def create_base_workspace():
+    collection = get_or_create_collection()
+    data_collection = get_or_create_data_collection()
+    
+    bpy.ops.mesh.primitive_cube_add(size=2, enter_editmode=False, align='WORLD', location=(0, 0, -5))
+    actual_obj = bpy.context.object  # Récupérer l'objet actif (celui qui vient d'être créé)
+    data_collection.objects.link(actual_obj)
+    bpy.context.scene.collection.objects.unlink(actual_obj)  # Retirer de Scene Collection
+
+    bpy.ops.mesh.primitive_cube_add(size=1, enter_editmode=False, align='WORLD', location=(0, 2, -5))
+    actual_obj = bpy.context.object 
+    data_collection.objects.link(actual_obj)
+    bpy.context.scene.collection.objects.unlink(actual_obj) 
+
+    # data_collection.hide_viewport = True
 
 # Get or create the collection "justin_plugin"
 def get_or_create_collection():
@@ -67,8 +84,18 @@ def add_asset(obj):
 
     obj_copy = obj.copy()
     obj_copy.location = tuple(asset_location)
-    collection.objects.link(obj_copy)
+    collection.objects.link(obj_copy)   # add to collection
 
+# Operator to create the workspace
+class OBJECT_OT_create_workspace(bpy.types.Operator):
+    bl_idname = "object.create_workspace"
+    bl_label = "Create Workspace"
+    bl_description = "Create the base workspace"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    def execute(self, context):
+        create_base_workspace()
+        return {'FINISHED'}
 
 # Operator to set the location to the cursor's position
 class OBJECT_OT_set_location_cursor(bpy.types.Operator):
@@ -84,29 +111,31 @@ class OBJECT_OT_set_location_cursor(bpy.types.Operator):
         return {'FINISHED'}
 
 
-# Operator to handle left arrow click (Switch to Cube)
+# Operator to handle left arrow click
 class OBJECT_OT_prev(bpy.types.Operator):
     bl_idname = "object.prev"
-    bl_label = "Previous Object (Cube)"
+    bl_label = "Previous Object"
+    bl_description = "Switch to the previous asset"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         add_asset(get_previous_asset())
         return {'FINISHED'}
 
-# Operator to handle right arrow click (Switch to Sphere)
+# Operator to handle right arrow click
 class OBJECT_OT_next(bpy.types.Operator):
     bl_idname = "object.next"
-    bl_label = "Next Object (Sphere)"
+    bl_label = "Next Object"
+    bl_description = "Switch to the next asset"
     bl_options = {'REGISTER', 'UNDO'}
 
     def execute(self, context):
         add_asset(get_next_asset())
         return {'FINISHED'}
 
-# Panel class UI
+# // ---------------------------------------- UI ---------------------------------------- \\ #
 class VIEW3D_PT_object_toggle_panel(bpy.types.Panel):
-    bl_label = "Object Toggle"
+    bl_label = "Modular Asset Creator"
     bl_idname = "VIEW3D_PT_object_toggle_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
@@ -115,20 +144,25 @@ class VIEW3D_PT_object_toggle_panel(bpy.types.Panel):
     def draw(self, context):
         layout = self.layout
 
+        col = layout.column()
+        col.prop(context.scene, "cursor_location", text="Create the basics")
+        col.operator(OBJECT_OT_create_workspace.bl_idname, text="Create Workspace")
+
         layout.label(text="Switch between assets in data_justin_plugin collection")
         # Arrow buttons
         row = layout.row()
-        row.operator(OBJECT_OT_prev.bl_idname, text="←", icon='TRIA_LEFT')
-        row.operator(OBJECT_OT_next.bl_idname, text="→", icon='TRIA_RIGHT')
+        row.operator(OBJECT_OT_prev.bl_idname, text="←")
+        row.operator(OBJECT_OT_next.bl_idname, text="→")
 
         # Location selection options
         layout.label(text="Set Asset Location")
-        col = layout.column()
-        col.prop(context.scene, "cursor_location", text="Location Coordinates")
-        col.operator(OBJECT_OT_set_location_cursor.bl_idname, text="Set to Cursor")
+        col2 = layout.column()
+        col2.prop(context.scene, "cursor_location", text="Location Coordinates")
+        col2.operator(OBJECT_OT_set_location_cursor.bl_idname, text="Set to Cursor")
 
 # Register and unregister functions
 def register():
+    bpy.utils.register_class(OBJECT_OT_create_workspace)
     bpy.utils.register_class(OBJECT_OT_prev)
     bpy.utils.register_class(OBJECT_OT_next)
     bpy.utils.register_class(OBJECT_OT_set_location_cursor)
@@ -136,6 +170,7 @@ def register():
 
 
 def unregister():
+    bpy.utils.unregister_class(OBJECT_OT_create_workspace)
     bpy.utils.unregister_class(OBJECT_OT_prev)
     bpy.utils.unregister_class(OBJECT_OT_next)
     bpy.utils.unregister_class(OBJECT_OT_set_location_cursor)
