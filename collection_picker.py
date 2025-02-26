@@ -35,7 +35,7 @@ def register():
     bpy.types.Scene.collection_picker = bpy.props.EnumProperty(
         name="Collection Picker",
         description="Pick a collection from the scene",
-        items=get_collection_items,  # dynamically update collection list
+        items=get_collection_items,  # dynamic update collection list
         update=update_collection,
     )
 

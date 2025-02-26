@@ -10,7 +10,7 @@ import bpy
 
 current_object = None
 index = 0
-asset_location = [0.0, 0.0, 0.0] 
+asset_location = [0.0, 0.0, 0.0]  # Default location
 
 # Add a StringProperty to store the collection name
 def get_collection_name(self):
@@ -94,7 +94,30 @@ def add_asset(obj):
     obj_copy.location = tuple(asset_location)
     collection.objects.link(obj_copy)   # add to collection
 
+def get_collection_items(self, context):
+    return [(col.name, col.name, "") for col in bpy.data.collections]
+
+def update_collection(self, context):
+    collection = bpy.data.collections.get(self.collection_picker)
+    if collection:
+        # Do shits
+        print(f"Selected collection: {collection.name}")
+
 # // ------------------------------------- OPERATORS ------------------------------------- \\ #
+class COLLECTION_PICKER_PT_Panel(bpy.types.Panel):
+    bl_label = "Collection Picker"
+    bl_idname = "COLLECTION_PICKER_PT_Panel"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Tool"
+
+    def draw(self, context):
+        layout = self.layout
+        scene = context.scene
+
+        # Dropdown
+        layout.prop(scene, "collection_picker", text="Select Collection")
+
 class OBJECT_OT_create_workspace(bpy.types.Operator):
     bl_idname = "object.create_workspace"
     bl_label = "Create Workspace"
@@ -148,6 +171,7 @@ class VIEW3D_PT_object_toggle_panel(bpy.types.Panel):
 
     def draw(self, context):
         layout = self.layout
+        scene = context.scene
 
         # Instructions section
         layout.label(text="Instructions:")
@@ -159,6 +183,9 @@ class VIEW3D_PT_object_toggle_panel(bpy.types.Panel):
 
         # Input for collection name
         layout.prop(context.scene, "collection_name", text="Name")
+
+        # TODO add base collection picker
+        layout.prop(scene, "collection_picker", text="Data Collection")
 
         col = layout.column()
         col.operator(OBJECT_OT_create_workspace.bl_idname, text="Create Workspace")
@@ -188,6 +215,15 @@ def register():
     bpy.utils.register_class(OBJECT_OT_set_location_cursor)
     bpy.utils.register_class(VIEW3D_PT_object_toggle_panel)
 
+    bpy.types.Scene.collection_picker = bpy.props.EnumProperty(
+        name="Collection Picker",
+        description="Pick a collection from the scene",
+        items=get_collection_items,  # dynamic update collection list
+        update=update_collection,
+    )
+
+    bpy.utils.register_class(COLLECTION_PICKER_PT_Panel)
+
 
 def unregister():
     bpy.utils.unregister_class(OBJECT_OT_create_workspace)
@@ -196,6 +232,9 @@ def unregister():
     bpy.utils.unregister_class(OBJECT_OT_set_location_cursor)
     bpy.utils.unregister_class(VIEW3D_PT_object_toggle_panel)
     del bpy.types.Scene.collection_name
+
+    bpy.utils.unregister_class(COLLECTION_PICKER_PT_Panel)
+    del bpy.types.Scene.collection_picker
 
 if __name__ == "__main__":
     register()
