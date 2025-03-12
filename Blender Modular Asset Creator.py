@@ -12,7 +12,7 @@ current_object = None
 index = 0
 asset_location = [0.0, 0.0, 0.0]  # Default location
 
-# Add a StringProperty to store the collection name
+# Store collection name
 def get_collection_name(self):
     return self.collection_name
 
@@ -36,7 +36,7 @@ def get_or_create_data_collection():
     return collection
 
 def remove_previous_object():
-    # Delete all objects in the collection
+    # Delete all objects in collection
     for obj in list(get_or_create_collection().objects):
         bpy.data.objects.remove(obj, do_unlink=True)
 
@@ -64,7 +64,7 @@ def get_previous_asset():
     obj = collection.objects[index]
     return obj
 
-# Function to add an asset at the chosen location
+# Function to add asset at chosen location
 def add_asset(obj):
     global current_object
     remove_previous_object()
@@ -75,7 +75,7 @@ def add_asset(obj):
     collection.objects.link(obj_copy)   # add to collection
 
 def get_collection_items(self, context):
-    return [(col.name, col.name, "") for col in bpy.data.collections]
+    return [(col.name, col.name, "") for col in bpy.data.collections if not col.name.startswith("temp_")]
 
 # Collection is picked:
 def update_collection(self, context):
